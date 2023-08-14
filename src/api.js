@@ -1,7 +1,7 @@
 // src/api.js
 
-// fragments microservice API, defaults to localhost:8080
-const apiUrl = process.env.API_URL || 'http://localhost:8080';
+// fragments microservice API
+const apiUrl = process.env.API_URL;
 
 /**
  * Given an authenticated user, request all fragments for this user from the
@@ -9,9 +9,10 @@ const apiUrl = process.env.API_URL || 'http://localhost:8080';
  * to have an `idToken` attached, so we can send that along with the request.
  */
 export async function getUserFragments(user) {
-  console.log('Requesting user fragments data...');
+  console.log("Requesting user fragments data...");
   try {
-    const res = await fetch(`${apiUrl}/v1/fragments`, {
+    console.log("Calling GET /v1/fragments");
+    const res = await fetch(`${apiUrl}/v1/fragments/?expand=1`, {
       // Generate headers with the proper Authorization bearer token to pass
       headers: user.authorizationHeaders(),
     });
@@ -19,11 +20,13 @@ export async function getUserFragments(user) {
       throw new Error(`${res.status} ${res.statusText}`);
     }
     const data = await res.json();
-    console.log('Got user fragments data', { data });
+    console.log("Got user fragments data", { data });
+    return data.fragments;
   } catch (err) {
-    console.error('Unable to call GET /v1/fragment', { err });
+    console.error("Unable to call GET /v1/fragment", { err });
   }
 }
+
 export async function postFragments(user, type, content) {
   console.log("Post fragments data...");
   try {
@@ -42,6 +45,50 @@ export async function postFragments(user, type, content) {
     console.log("Post user fragments data", { data });
   } catch (err) {
     console.error("Unable to call POST /fragment", { err });
+  }
+}
+
+export async function putFragment(user, id, type, content) {
+  console.log("Put fragments data...");
+  try {
+    console.log(type);
+    console.log(content);
+    const res = await fetch(`${apiUrl}/v1/fragments/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${user.idToken}`,
+        "Content-Type": `${type}`,
+      },
+      body: `${content}`,
+    });
+    if (!res.ok) {
+      throw new Error(`${res.status} ${res.statusText}`);
+    }
+    const data = await res.json();
+    console.log("Put user fragments data", { data });
+    return data;
+  } catch (err) {
+    console.error("Unable to call Put /fragment", { err });
+  }
+}
+
+export async function deleteFragment(user, id) {
+  console.log("Delete fragment");
+  try {
+    const res = await fetch(`${apiUrl}/v1/fragments/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${user.idToken}`,
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`${res.status} ${res.statusText}`);
+    }
+    const ret = await res.json();
+    console.log("Delete fragments data", { ret });
+    return ret;
+  } catch (err) {
+    console.error("Unable to call DELETE /fragment", { err });
   }
 }
 
